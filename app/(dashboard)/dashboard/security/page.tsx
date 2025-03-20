@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Lock, Trash2, Loader2 } from 'lucide-react';
-import { startTransition, useActionState } from 'react';
-import { updatePassword, deleteAccount } from '@/app/(login)/actions';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Lock, Trash2, Loader2 } from "lucide-react";
+import { startTransition, useActionState } from "react";
+import { updatePassword, deleteAccount } from "@/app/(login)/actions";
 
 type ActionState = {
   error?: string;
@@ -17,15 +17,15 @@ export default function SecurityPage() {
   const [passwordState, passwordAction, isPasswordPending] = useActionState<
     ActionState,
     FormData
-  >(updatePassword, { error: '', success: '' });
+  >(updatePassword, { error: "", success: "" });
 
   const [deleteState, deleteAction, isDeletePending] = useActionState<
     ActionState,
     FormData
-  >(deleteAccount, { error: '', success: '' });
+  >(deleteAccount, { error: "", success: "" });
 
   const handlePasswordSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
     // If you call the Server Action directly, it will automatically
@@ -41,7 +41,7 @@ export default function SecurityPage() {
   };
 
   const handleDeleteSubmit = async (
-    event: React.FormEvent<HTMLFormElement>
+    event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
     startTransition(() => {
