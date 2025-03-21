@@ -15,16 +15,27 @@ import { Label } from "@/components/ui/label";
 import { use, useActionState } from "react";
 import { inviteTeamMember } from "@/app/(login)/actions";
 import { useUser } from "@/lib/auth";
+import { Perm, RoleName, TeamDataWithMembers } from "@/lib/db/schema";
+import { canUserPerformAction } from "@/lib/auth/permissions";
+import { getTeamForUser } from "@/lib/db/queries";
 
 type ActionState = {
   error?: string;
   success?: string;
 };
 
-export function InviteTeamMember() {
+export function InviteTeamMember({
+  teamData,
+}: {
+  teamData: TeamDataWithMembers;
+}) {
   const { userPromise } = useUser();
   const user = use(userPromise);
-  const isOwner = user?.role === "owner";
+  const canInvite =
+    user && canUserPerformAction(user.id, teamData.id, Perm.INVITE_USER);
+  const canSetPermissions =
+    user &&
+    canUserPerformAction(user.id, teamData.id, Perm.SET_USER_PERMISSIONS);
   const [inviteState, inviteAction, isInvitePending] = useActionState<
     ActionState,
     FormData
@@ -45,7 +56,7 @@ export function InviteTeamMember() {
               type="email"
               placeholder="Enter email"
               required
-              disabled={!isOwner}
+              disabled={!canInvite}
             />
           </div>
           <div>
@@ -54,16 +65,14 @@ export function InviteTeamMember() {
               defaultValue="member"
               name="role"
               className="flex space-x-4"
-              disabled={!isOwner}
+              disabled={!canInvite || !canSetPermissions}
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="member" id="member" />
-                <Label htmlFor="member">Member</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="owner" id="owner" />
-                <Label htmlFor="owner">Owner</Label>
-              </div>
+              {Object.values(RoleName).map((role, index) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <RadioGroupItem value={role} id={role} />
+                  <Label htmlFor={role}>{role}</Label>
+                </div>
+              ))}
             </RadioGroup>
           </div>
           {inviteState?.error && (
@@ -75,7 +84,7 @@ export function InviteTeamMember() {
           <Button
             type="submit"
             className="bg-orange-500 hover:bg-orange-600 text-white"
-            disabled={isInvitePending || !isOwner}
+            disabled={isInvitePending || !canInvite}
           >
             {isInvitePending ? (
               <>
@@ -91,10 +100,10 @@ export function InviteTeamMember() {
           </Button>
         </form>
       </CardContent>
-      {!isOwner && (
+      {!canInvite && (
         <CardFooter>
           <p className="text-sm text-muted-foreground">
-            You must be a team owner to invite new members.
+            You must be a team owner or admin to invite new members.
           </p>
         </CardFooter>
       )}

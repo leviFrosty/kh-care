@@ -5,15 +5,50 @@ import {
   text,
   timestamp,
   integer,
+  AnyPgColumn,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
+
+export function enumToPgEnum<T extends Record<string, any>>(
+  myEnum: T
+): [T[keyof T], ...T[keyof T][]] {
+  return Object.values(myEnum).map((value: any) => `${value}`) as any;
+}
+
+export enum Perm {
+  CREATE_TASK = "create_task",
+  READ_TASK = "read_task",
+  UPDATE_TASK = "update_task",
+  DELETE_TASK = "delete_task",
+
+  CREATE_FILE = "create_file",
+  READ_FILE = "read_file",
+  UPDATE_FILE = "update_file",
+  DELETE_FILE = "delete_file",
+
+  INVITE_USER = "invite_user",
+  SET_USER_PERMISSIONS = "set_user_permissions",
+}
+export enum RoleName {
+  OWNER = "owner",
+  ADMIN = "admin",
+  MEMBER = "member",
+}
+export const role = pgEnum("role", enumToPgEnum(RoleName));
+export const fileType = pgEnum("type", ["file", "folder"]);
+export const taskStatus = pgEnum("status", [
+  "created",
+  "todo",
+  "in_progress",
+  "done",
+]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  role: varchar("role", { length: 20 }).notNull().default("member"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
   deletedAt: timestamp("deleted_at"),
@@ -31,6 +66,39 @@ export const teams = pgTable("teams", {
   subscriptionStatus: varchar("subscription_status", { length: 20 }),
 });
 
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: role("role").notNull(),
+});
+
+export const teamRoles = pgTable("team_roles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id),
+  roleId: integer("role_id")
+    .notNull()
+    .references(() => roles.id),
+});
+
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  name: pgEnum("name", enumToPgEnum(Perm))().notNull(), // e.g., 'create_task', 'delete_task', 'read_file'
+});
+
+export const rolePermissions = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id")
+    .notNull()
+    .references(() => roles.id),
+  permissionId: integer("permission_id")
+    .notNull()
+    .references(() => permissions.id),
+});
+
 export const teamMembers = pgTable("team_members", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
@@ -39,8 +107,57 @@ export const teamMembers = pgTable("team_members", {
   teamId: integer("team_id")
     .notNull()
     .references(() => teams.id),
-  role: varchar("role", { length: 50 }).notNull(),
   joinedAt: timestamp("joined_at").notNull().defaultNow(),
+});
+
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id),
+  parentTaskId: integer("parent_task_id").references(
+    /**
+     * If you want to do a self reference, due to a TypeScript limitations you
+     * will have to either explicitly set return type for reference callback
+     * or use a standalone foreignKey operator.
+     * See https://orm.drizzle.team/docs/indexes-constraints#foreign-key
+     */
+    (): AnyPgColumn => tasks.id
+  ),
+  title: varchar("title", { length: 100 }).notNull(),
+  description: text("description"),
+  status: taskStatus().notNull().default("todo"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+  dueDate: timestamp("due_date"),
+});
+
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id")
+    .notNull()
+    .references(() => tasks.id),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  comment: text("comment").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const files = pgTable("files", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(), // File or folder name
+  type: fileType().notNull(), // Could be 'file' or 'folder'
+  s3Key: varchar("s3_key", { length: 255 }).notNull().unique(), // S3 key for locating the file in S3
+  parentId: integer("parent_id").references((): AnyPgColumn => files.id), // Self-reference for folder hierarchy
+  teamId: integer("team_id")
+    .notNull()
+    .references(() => teams.id),
+  size: integer("size"), // Size of the file in bytes (null for folders)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const activityLogs = pgTable("activity_logs", {
@@ -60,7 +177,9 @@ export const invitations = pgTable("invitations", {
     .notNull()
     .references(() => teams.id),
   email: varchar("email", { length: 255 }).notNull(),
-  role: varchar("role", { length: 50 }).notNull(),
+  roleId: integer("role")
+    .notNull()
+    .references(() => roles.id),
   invitedBy: integer("invited_by")
     .notNull()
     .references(() => users.id),
@@ -127,6 +246,18 @@ export type TeamDataWithMembers = Team & {
     user: Pick<User, "id" | "name" | "email">;
   })[];
 };
+export type Role = typeof roles.$inferSelect;
+export type NewRole = typeof roles.$inferInsert;
+export type Permission = typeof permissions.$inferSelect;
+export type NewPermission = typeof permissions.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
+export type File = typeof files.$inferSelect;
+export type NewFile = typeof files.$inferInsert;
+export type TeamRole = typeof teamRoles.$inferSelect;
+export type NewTeamRole = typeof teamRoles.$inferInsert;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type NewRolePermission = typeof rolePermissions.$inferInsert;
 
 export enum ActivityType {
   SIGN_UP = "SIGN_UP",
@@ -139,4 +270,5 @@ export enum ActivityType {
   REMOVE_TEAM_MEMBER = "REMOVE_TEAM_MEMBER",
   INVITE_TEAM_MEMBER = "INVITE_TEAM_MEMBER",
   ACCEPT_INVITATION = "ACCEPT_INVITATION",
+  ROLE_UPDATE = "ROLE_UPDATE",
 }

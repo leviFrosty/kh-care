@@ -1,6 +1,14 @@
 import { desc, and, eq, isNull } from "drizzle-orm";
 import { db } from "./drizzle";
-import { activityLogs, teamMembers, teams, users } from "./schema";
+import {
+  activityLogs,
+  Role,
+  roles,
+  teamMembers,
+  teamRoles,
+  teams,
+  users,
+} from "./schema";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth/session";
 
@@ -33,7 +41,45 @@ export async function getUser() {
     return null;
   }
 
-  return user[0];
+  const team = await getTeamForUser(user[0].id);
+
+  const role = await getUserRole(user[0].id, team.id);
+
+  return { user: user[0], team, role };
+}
+
+/** Gets the role of a user in a team */
+export async function getUserRole(
+  userId: number,
+  teamId: number
+): Promise<Role | null> {
+  const team = await getTeamForUser(userId);
+
+  if (!team) {
+    throw new Error(`Team not found for user ${userId}`);
+  }
+
+  const teamRole = await db
+    .select()
+    .from(teamRoles)
+    .where(and(eq(teamRoles.userId, userId), eq(teamRoles.teamId, teamId)))
+    .limit(1);
+
+  if (teamRole.length === 0) {
+    return null;
+  }
+
+  const role = await db
+    .select()
+    .from(roles)
+    .where(eq(roles.id, teamRole[0].roleId))
+    .limit(1);
+
+  if (role.length === 0) {
+    return null;
+  }
+
+  return role[0];
 }
 
 export async function getTeamByStripeCustomerId(customerId: string) {
@@ -53,7 +99,7 @@ export async function updateTeamSubscription(
     stripeProductId: string | null;
     planName: string | null;
     subscriptionStatus: string;
-  },
+  }
 ) {
   await db
     .update(teams)
