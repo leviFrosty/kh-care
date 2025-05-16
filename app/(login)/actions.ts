@@ -404,15 +404,14 @@ export const removeTeamMember = validatedActionWithUser(
 
 const inviteTeamMemberSchema = z.object({
   email: z.string().email("Invalid email address"),
-  serializedRole: z.string(), // Serialized from Role enum
+  role: RoleSchema,
 });
 
 export const inviteTeamMember = validatedActionWithUser(
   inviteTeamMemberSchema,
   async (data, _, user) => {
-    const { email, serializedRole } = data;
+    const { email, role } = data;
     const userWithTeam = await getUserWithTeam(user.id);
-    const roleId = RoleSchema.parse(serializedRole);
 
     if (!userWithTeam?.teamId) {
       return { error: "User is not part of a team" };
@@ -423,7 +422,6 @@ export const inviteTeamMember = validatedActionWithUser(
       userWithTeam.teamId,
       Perm.INVITE_USER
     );
-    console.log("user can invite", canInvite);
 
     if (!canInvite) {
       return { error: "You do not have permission to invite users" };
@@ -463,7 +461,7 @@ export const inviteTeamMember = validatedActionWithUser(
     await db.insert(invitations).values({
       teamId: userWithTeam.teamId,
       email,
-      roleId: roleId,
+      roleId: role,
       invitedBy: user.id,
       status: "pending",
     });

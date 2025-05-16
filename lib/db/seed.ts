@@ -1,6 +1,6 @@
 import { stripe } from "../payments/stripe";
 import { db } from "./drizzle";
-import { Perm, Role } from "./permissions";
+import { Perm, Role, RoleStrings } from "./permissions";
 import {
   users,
   teams,
@@ -81,11 +81,13 @@ async function seed() {
     .returning();
   console.log("All permissions created.");
 
-  await db.insert(roles).values({
-    id: Role.OWNER,
-    name: "Owner",
+  Object.values(Role).forEach((role) => {
+    db.insert(roles).values({
+      id: role,
+      name: RoleStrings[role],
+    });
   });
-  console.log("Owner role created.");
+  console.log("Roles created.");
 
   await db.insert(rolePermissions).values(
     perms.map((perm) => ({
