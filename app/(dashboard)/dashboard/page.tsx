@@ -1,24 +1,25 @@
-'use client';
-
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+"use client";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardFooter
-} from '@/components/ui/card';
-import { customerPortalAction } from '@/lib/payments/actions';
-import { useActionState } from 'react';
-import { TeamDataWithMembers, User } from '@/lib/db/schema';
-import { removeTeamMember, inviteTeamMember } from '@/app/(login)/actions';
-import useSWR from 'swr';
-import { Suspense } from 'react';
-import { Input } from '@/components/ui/input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Loader2, PlusCircle } from 'lucide-react';
+  CardFooter,
+} from "@/components/ui/card";
+import { customerPortalAction } from "@/lib/payments/actions";
+import { useActionState } from "react";
+import { TeamDataWithMembers, User } from "@/lib/db/schema";
+import { removeTeamMember, inviteTeamMember } from "@/app/(login)/actions";
+import useSWR from "swr";
+import { Suspense } from "react";
+import { Input } from "@/components/ui/input";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Loader2, PlusCircle } from "lucide-react";
+import { userCanPerformAction } from "@/lib/auth/permissions";
+import { Perm, Role, RoleStrings } from "@/lib/db/permissions";
 
 type ActionState = {
   error?: string;
@@ -38,7 +39,7 @@ function SubscriptionSkeleton() {
 }
 
 function ManageSubscription() {
-  const { data: teamData } = useSWR<TeamDataWithMembers>('/api/team', fetcher);
+  const { data: teamData } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
 
   return (
     <Card className="mb-8">
@@ -50,14 +51,14 @@ function ManageSubscription() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div className="mb-4 sm:mb-0">
               <p className="font-medium">
-                Current Plan: {teamData?.planName || 'Free'}
+                Current Plan: {teamData?.planName || "Free"}
               </p>
               <p className="text-sm text-muted-foreground">
-                {teamData?.subscriptionStatus === 'active'
-                  ? 'Billed monthly'
-                  : teamData?.subscriptionStatus === 'trialing'
-                  ? 'Trial period'
-                  : 'No active subscription'}
+                {teamData?.subscriptionStatus === "active"
+                  ? "Billed monthly"
+                  : teamData?.subscriptionStatus === "trialing"
+                  ? "Trial period"
+                  : "No active subscription"}
               </p>
             </div>
             <form action={customerPortalAction}>
@@ -94,14 +95,15 @@ function TeamMembersSkeleton() {
 }
 
 function TeamMembers() {
-  const { data: teamData } = useSWR<TeamDataWithMembers>('/api/team', fetcher);
+  const { data: teamData } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
+  console.log(teamData);
   const [removeState, removeAction, isRemovePending] = useActionState<
     ActionState,
     FormData
   >(removeTeamMember, {});
 
-  const getUserDisplayName = (user: Pick<User, 'id' | 'name' | 'email'>) => {
-    return user.name || user.email || 'Unknown User';
+  const getUserDisplayName = (user: Pick<User, "id" | "name" | "email">) => {
+    return user.name || user.email || "Unknown User";
   };
 
   if (!teamData?.teamMembers?.length) {
@@ -139,9 +141,9 @@ function TeamMembers() {
                   */}
                   <AvatarFallback>
                     {getUserDisplayName(member.user)
-                      .split(' ')
+                      .split(" ")
                       .map((n) => n[0])
-                      .join('')}
+                      .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div>
@@ -149,7 +151,7 @@ function TeamMembers() {
                     {getUserDisplayName(member.user)}
                   </p>
                   <p className="text-sm text-muted-foreground capitalize">
-                    {member.role}
+                    {member.role.name}
                   </p>
                 </div>
               </div>
@@ -162,7 +164,7 @@ function TeamMembers() {
                     size="sm"
                     disabled={isRemovePending}
                   >
-                    {isRemovePending ? 'Removing...' : 'Remove'}
+                    {isRemovePending ? "Removing..." : "Remove"}
                   </Button>
                 </form>
               ) : null}
@@ -188,8 +190,12 @@ function InviteTeamMemberSkeleton() {
 }
 
 function InviteTeamMember() {
-  const { data: user } = useSWR<User>('/api/user', fetcher);
-  const isOwner = user?.role === 'owner';
+  const { data: user } = useSWR<User>("/api/user", fetcher);
+  const { data: teamData } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
+  const canInvite = true; // TODO: figure out the best way to get this data to page
+  // user && teamData
+  //   ? userCanPerformAction(user.id, teamData.id, Perm.INVITE_USER)
+  //   : false;
   const [inviteState, inviteAction, isInvitePending] = useActionState<
     ActionState,
     FormData
@@ -212,7 +218,7 @@ function InviteTeamMember() {
               type="email"
               placeholder="Enter email"
               required
-              disabled={!isOwner}
+              disabled={!canInvite}
             />
           </div>
           <div>
@@ -221,16 +227,14 @@ function InviteTeamMember() {
               defaultValue="member"
               name="role"
               className="flex space-x-4"
-              disabled={!isOwner}
+              disabled={!canInvite}
             >
-              <div className="flex items-center space-x-2 mt-2">
-                <RadioGroupItem value="member" id="member" />
-                <Label htmlFor="member">Member</Label>
-              </div>
-              <div className="flex items-center space-x-2 mt-2">
-                <RadioGroupItem value="owner" id="owner" />
-                <Label htmlFor="owner">Owner</Label>
-              </div>
+              {Object.values(Role).map((role) => (
+                <div key={role} className="flex items-center space-x-2 mt-2">
+                  <RadioGroupItem value={role} id={role} />
+                  <Label htmlFor={role}>{RoleStrings[role]}</Label>
+                </div>
+              ))}
             </RadioGroup>
           </div>
           {inviteState?.error && (
@@ -242,7 +246,7 @@ function InviteTeamMember() {
           <Button
             type="submit"
             className="bg-orange-500 hover:bg-orange-600 text-white"
-            disabled={isInvitePending || !isOwner}
+            disabled={isInvitePending || !canInvite}
           >
             {isInvitePending ? (
               <>
@@ -258,7 +262,7 @@ function InviteTeamMember() {
           </Button>
         </form>
       </CardContent>
-      {!isOwner && (
+      {!canInvite && (
         <CardFooter>
           <p className="text-sm text-muted-foreground">
             You must be a team owner to invite new members.

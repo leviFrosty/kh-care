@@ -4,11 +4,15 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
+    "typecheck": "tsc --noEmit",
     "db:setup": "npx tsx lib/db/setup.ts",
     "db:seed": "npx tsx lib/db/seed.ts",
+    "db:down": "docker-compose down -v",
+    "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "clean": "rm -rf .next node_modules tsconfig.tsbuildinfo && docker-compose down -v"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.9",
