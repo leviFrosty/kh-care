@@ -81,8 +81,8 @@ async function seed() {
     .returning();
   console.log("All permissions created.");
 
-  Object.values(Role).forEach((role) => {
-    db.insert(roles).values({
+  Object.values(Role).forEach(async (role) => {
+    await db.insert(roles).values({
       id: role,
       name: RoleStrings[role],
     });

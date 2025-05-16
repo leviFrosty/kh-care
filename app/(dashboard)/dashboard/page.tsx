@@ -96,7 +96,6 @@ function TeamMembersSkeleton() {
 
 function TeamMembers() {
   const { data: teamData } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
-  console.log(teamData);
   const [removeState, removeAction, isRemovePending] = useActionState<
     ActionState,
     FormData
