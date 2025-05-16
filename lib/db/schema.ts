@@ -15,7 +15,7 @@ import { relations } from "drizzle-orm";
 import { Perm, Role } from "./permissions";
 
 export function enumToPgEnum<T extends Record<string, any>>(
-  myEnum: T
+  myEnum: T,
 ): [T[keyof T], ...T[keyof T][]] {
   return Object.values(myEnum).map((value: any) => `${value}`) as any;
 }
@@ -43,7 +43,7 @@ export const tasks = pgTable(
        * or use a standalone foreignKey operator.
        * See https://orm.drizzle.team/docs/indexes-constraints#foreign-key
        */
-      (): AnyPgColumn => tasks.id
+      (): AnyPgColumn => tasks.id,
     ),
     title: varchar("title", { length: 100 }).notNull(),
     description: text("description"),
@@ -56,7 +56,7 @@ export const tasks = pgTable(
   (table) => [
     index("idx_tasks_team_id").on(table.teamId),
     index("idx_tasks_parent_task_id").on(table.parentTaskId),
-  ]
+  ],
 );
 
 export const comments = pgTable(
@@ -76,7 +76,7 @@ export const comments = pgTable(
   (table) => [
     index("idx_comments_task_id").on(table.taskId),
     index("idx_comments_user_id").on(table.userId),
-  ]
+  ],
 );
 
 export const files = pgTable(
@@ -97,7 +97,7 @@ export const files = pgTable(
   (table) => [
     index("idx_files_team_id").on(table.teamId),
     index("idx_files_parent_id").on(table.parentId),
-  ]
+  ],
 );
 
 export const activityLogs = pgTable(
@@ -115,7 +115,7 @@ export const activityLogs = pgTable(
   (table) => [
     index("idx_activity_logs_team_id").on(table.teamId),
     index("idx_activity_logs_user_id").on(table.userId),
-  ]
+  ],
 );
 
 export const invitations = pgTable(
@@ -138,7 +138,7 @@ export const invitations = pgTable(
   (table) => [
     index("idx_invitations_team_id").on(table.teamId),
     index("idx_invitations_email").on(table.email),
-  ]
+  ],
 );
 
 export const users = pgTable("users", {
@@ -164,7 +164,7 @@ export const teams = pgTable(
     planName: varchar("plan_name", { length: 50 }),
     subscriptionStatus: varchar("subscription_status", { length: 20 }),
   },
-  (table) => [index("idx_teams_stripe_customer_id").on(table.stripeCustomerId)]
+  (table) => [index("idx_teams_stripe_customer_id").on(table.stripeCustomerId)],
 );
 
 export const roles = pgTable("roles", {
@@ -191,7 +191,7 @@ export const rolePermissions = pgTable(
   (table) => [
     index("idx_role_permissions_role_id").on(table.roleId),
     index("idx_role_permissions_permission_id").on(table.permissionId),
-  ]
+  ],
 );
 
 export const teamMembers = pgTable(
@@ -214,7 +214,7 @@ export const teamMembers = pgTable(
     index("idx_team_members_user_id").on(table.userId),
     index("idx_team_members_team_id").on(table.teamId),
     index("idx_team_members_role_id").on(table.roleId),
-  ]
+  ],
 );
 
 export const teamsRelations = relations(teams, ({ many }) => ({
@@ -274,7 +274,7 @@ export const rolePermissionsRelations = relations(
       fields: [rolePermissions.permissionId],
       references: [permissions.id],
     }),
-  })
+  }),
 );
 
 export const taskRelations = relations(tasks, ({ one, many }) => ({

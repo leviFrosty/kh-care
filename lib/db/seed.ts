@@ -76,7 +76,7 @@ async function seed() {
     .values(
       Object.values(Perm).map((perm) => ({
         name: perm,
-      }))
+      })),
     )
     .returning();
   console.log("All permissions created.");
@@ -93,7 +93,7 @@ async function seed() {
     perms.map((perm) => ({
       roleId: Role.OWNER,
       permissionId: perm.id,
-    }))
+    })),
   );
 
   console.log("All permissions assigned to owner role.");

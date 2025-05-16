@@ -18,13 +18,13 @@ function question(query: string): Promise<string> {
     rl.question(query, (ans) => {
       rl.close();
       resolve(ans);
-    })
+    }),
   );
 }
 
 async function checkStripeCLI() {
   console.log(
-    "Step 1: Checking if Stripe CLI is installed and authenticated..."
+    "Step 1: Checking if Stripe CLI is installed and authenticated...",
   );
   try {
     await execAsync("stripe --version");
@@ -36,15 +36,15 @@ async function checkStripeCLI() {
       console.log("Stripe CLI is authenticated.");
     } catch (error) {
       console.log(
-        "Stripe CLI is not authenticated or the authentication has expired."
+        "Stripe CLI is not authenticated or the authentication has expired.",
       );
       console.log("Please run: stripe login");
       const answer = await question(
-        "Have you completed the authentication? (y/n): "
+        "Have you completed the authentication? (y/n): ",
       );
       if (answer.toLowerCase() !== "y") {
         console.log(
-          "Please authenticate with Stripe CLI and run this script again."
+          "Please authenticate with Stripe CLI and run this script again.",
         );
         process.exit(1);
       }
@@ -55,23 +55,23 @@ async function checkStripeCLI() {
         console.log("Stripe CLI authentication confirmed.");
       } catch (error) {
         console.error(
-          "Failed to verify Stripe CLI authentication. Please try again."
+          "Failed to verify Stripe CLI authentication. Please try again.",
         );
         process.exit(1);
       }
     }
   } catch (error) {
     console.error(
-      "Stripe CLI is not installed. Please install it and try again."
+      "Stripe CLI is not installed. Please install it and try again.",
     );
     console.log("To install Stripe CLI, follow these steps:");
     console.log("1. Visit: https://docs.stripe.com/stripe-cli");
     console.log(
-      "2. Download and install the Stripe CLI for your operating system"
+      "2. Download and install the Stripe CLI for your operating system",
     );
     console.log("3. After installation, run: stripe login");
     console.log(
-      "After installation and authentication, please run this setup script again."
+      "After installation and authentication, please run this setup script again.",
     );
     process.exit(1);
   }
@@ -90,10 +90,10 @@ async function setupLocalPostgres() {
     console.log("Docker is installed.");
   } catch (error) {
     console.error(
-      "Docker is not installed. Please install Docker and try again."
+      "Docker is not installed. Please install Docker and try again.",
     );
     console.log(
-      "To install Docker, visit: https://docs.docker.com/get-docker/"
+      "To install Docker, visit: https://docs.docker.com/get-docker/",
     );
     process.exit(1);
   }
@@ -119,7 +119,7 @@ volumes:
 
   await fs.writeFile(
     path.join(process.cwd(), "docker-compose.yml"),
-    dockerComposeContent
+    dockerComposeContent,
   );
   console.log("docker-compose.yml file created.");
 
@@ -129,7 +129,7 @@ volumes:
     console.log("Docker container started successfully.");
   } catch (error) {
     console.error(
-      "Failed to start Docker container. Please check your Docker installation and try again."
+      "Failed to start Docker container. Please check your Docker installation and try again.",
     );
     process.exit(1);
   }
@@ -139,13 +139,16 @@ async function readEnvFile(): Promise<Record<string, string>> {
   try {
     const envPath = path.join(process.cwd(), ".env");
     const envContent = await fs.readFile(envPath, "utf-8");
-    return envContent.split("\n").reduce((acc, line) => {
-      const [key, ...value] = line.split("=");
-      if (key) {
-        acc[key.trim()] = value.join("=").trim();
-      }
-      return acc;
-    }, {} as Record<string, string>);
+    return envContent.split("\n").reduce(
+      (acc, line) => {
+        const [key, ...value] = line.split("=");
+        if (key) {
+          acc[key.trim()] = value.join("=").trim();
+        }
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
   } catch (error) {
     console.error("Error reading .env file:", error);
     throw error;
@@ -162,7 +165,7 @@ async function getStripeSecretKey(): Promise<string> {
   }
 
   console.log(
-    "You can find your Stripe Secret Key at: https://dashboard.stripe.com/test/apikeys"
+    "You can find your Stripe Secret Key at: https://dashboard.stripe.com/test/apikeys",
   );
   return await question("Enter your Stripe Secret Key: ");
 }
@@ -179,11 +182,11 @@ async function createStripeWebhook(): Promise<string> {
     return match[0];
   } catch (error) {
     console.error(
-      "Failed to create Stripe webhook. Check your Stripe CLI installation and permissions."
+      "Failed to create Stripe webhook. Check your Stripe CLI installation and permissions.",
     );
     if (os.platform() === "win32") {
       console.log(
-        "Note: On Windows, you may need to run this script as an administrator."
+        "Note: On Windows, you may need to run this script as an administrator.",
       );
     }
     throw error;

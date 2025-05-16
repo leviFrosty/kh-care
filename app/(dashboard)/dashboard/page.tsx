@@ -57,8 +57,8 @@ function ManageSubscription() {
                 {teamData?.subscriptionStatus === "active"
                   ? "Billed monthly"
                   : teamData?.subscriptionStatus === "trialing"
-                  ? "Trial period"
-                  : "No active subscription"}
+                    ? "Trial period"
+                    : "No active subscription"}
               </p>
             </div>
             <form action={customerPortalAction}>

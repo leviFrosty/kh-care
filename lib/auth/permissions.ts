@@ -8,7 +8,7 @@ import { Perm } from "../db/permissions";
 export async function userCanPerformAction(
   userId: number,
   teamId: number,
-  permissionName: Perm
+  permissionName: Perm,
 ): Promise<boolean> {
   const result = await db
     .select()
@@ -19,8 +19,8 @@ export async function userCanPerformAction(
       and(
         eq(teamMembers.userId, userId),
         eq(teamMembers.teamId, teamId),
-        eq(permissions.name, permissionName)
-      )
+        eq(permissions.name, permissionName),
+      ),
     )
     .limit(1)
     .execute();
