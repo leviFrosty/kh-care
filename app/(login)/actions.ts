@@ -28,6 +28,7 @@ import {
 } from "@/lib/auth/middleware";
 import { Perm, Role, RoleSchema } from "@/lib/db/permissions";
 import { userCanPerformAction } from "@/lib/auth/permissions";
+import { sendInvitationEmail } from "@/lib/email";
 
 async function logActivity(
   teamId: number | null | undefined,
@@ -404,13 +405,14 @@ export const removeTeamMember = validatedActionWithUser(
 
 const inviteTeamMemberSchema = z.object({
   email: z.string().email("Invalid email address"),
+  url: z.string().url(),
   role: RoleSchema,
 });
 
 export const inviteTeamMember = validatedActionWithUser(
   inviteTeamMemberSchema,
   async (data, _, user) => {
-    const { email, role } = data;
+    const { email, role, url } = data;
     const userWithTeam = await getUserWithTeam(user.id);
 
     if (!userWithTeam?.teamId) {
@@ -461,13 +463,16 @@ export const inviteTeamMember = validatedActionWithUser(
     }
 
     // Create a new invitation
-    await db.insert(invitations).values({
-      teamId: userWithTeam.teamId,
-      email,
-      roleId: role,
-      invitedBy: user.id,
-      status: "pending",
-    });
+    const invite = await db
+      .insert(invitations)
+      .values({
+        teamId: userWithTeam.teamId,
+        email,
+        roleId: role,
+        invitedBy: user.id,
+        status: "pending",
+      })
+      .returning();
 
     await logActivity(
       userWithTeam.teamId,
@@ -475,8 +480,19 @@ export const inviteTeamMember = validatedActionWithUser(
       ActivityType.INVITE_TEAM_MEMBER,
     );
 
-    // TODO: Send invitation email and include ?inviteId={id} to sign-up URL
-    // await sendInvitationEmail(email, userWithTeam.team.name, role)
+    if (invite.length === 0) {
+      return { error: "Failed to create invitation. Please try again." };
+    }
+
+    const inviteUrl = new URL(url);
+    inviteUrl.pathname = "/sign-in";
+    inviteUrl.searchParams.set("inviteId", invite[0].id.toString());
+
+    await sendInvitationEmail(
+      email,
+      userWithTeam.teamName,
+      inviteUrl.toString(),
+    );
 
     return { success: "Invitation sent successfully" };
   },

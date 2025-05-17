@@ -9,7 +9,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { customerPortalAction } from "@/lib/payments/actions";
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { TeamDataWithMembers, User } from "@/lib/db/schema";
 import { removeTeamMember, inviteTeamMember } from "@/app/(login)/actions";
 import useSWR from "swr";
@@ -18,8 +18,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, PlusCircle } from "lucide-react";
-import { userCanPerformAction } from "@/lib/auth/permissions";
-import { Perm, Role, RoleStrings } from "@/lib/db/permissions";
+import { Role, RoleStrings } from "@/lib/db/permissions";
 
 type ActionState = {
   error?: string;
@@ -191,6 +190,14 @@ function InviteTeamMemberSkeleton() {
 function InviteTeamMember() {
   const { data: user } = useSWR<User>("/api/user", fetcher);
   const { data: teamData } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
+  const [origin, setOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin);
+    }
+  }, []);
+
   const canInvite = true; // TODO: figure out the best way to get this data to page
   // user && teamData
   //   ? userCanPerformAction(user.id, teamData.id, Perm.INVITE_USER)
@@ -207,6 +214,7 @@ function InviteTeamMember() {
       </CardHeader>
       <CardContent>
         <form action={inviteAction} className="space-y-4">
+          <input type="hidden" name="url" value={origin} />
           <div>
             <Label htmlFor="email" className="mb-2">
               Email

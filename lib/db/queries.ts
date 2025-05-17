@@ -76,9 +76,11 @@ export async function getUserWithTeam(userId: number) {
     .select({
       user: users,
       teamId: teamMembers.teamId,
+      teamName: teams.name,
     })
     .from(users)
     .leftJoin(teamMembers, eq(users.id, teamMembers.userId))
+    .innerJoin(teams, eq(teamMembers.teamId, teams.id))
     .where(eq(users.id, userId))
     .limit(1);
 
