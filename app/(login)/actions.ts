@@ -485,7 +485,7 @@ export const inviteTeamMember = validatedActionWithUser(
     }
 
     const inviteUrl = new URL(url);
-    inviteUrl.pathname = "/sign-in";
+    inviteUrl.pathname = "/sign-up";
     inviteUrl.searchParams.set("inviteId", invite[0].id.toString());
 
     await sendInvitationEmail(

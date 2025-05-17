@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { useActionState } from "react";
 import { useSearchParams } from "next/navigation";
@@ -15,6 +14,7 @@ export function Login({ mode = "signin" }: { mode?: "signin" | "signup" }) {
   const redirect = searchParams.get("redirect");
   const priceId = searchParams.get("priceId");
   const inviteId = searchParams.get("inviteId");
+
   const [state, formAction, pending] = useActionState<ActionState, FormData>(
     mode === "signin" ? signIn : signUp,
     { error: "" },
