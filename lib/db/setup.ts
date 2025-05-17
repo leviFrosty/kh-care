@@ -136,6 +136,7 @@ volumes:
 }
 
 async function readEnvFile(): Promise<Record<string, string>> {
+  // TODO: make this not error if file doesn't exist
   try {
     const envPath = path.join(process.cwd(), ".env");
     const envContent = await fs.readFile(envPath, "utf-8");
