@@ -12,9 +12,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/datepicker";
+import { TiptapEditor } from "@/components/ui/tiptap-editor";
 
 export function AddNewSheet() {
   const [selected, setSelected] = useState("task");
+  const [description, setDescription] = useState("");
 
   return (
     <div className="p-4 overflow-scroll flex flex-col h-full text-foreground">
@@ -65,11 +67,14 @@ export function AddNewSheet() {
             <Label htmlFor="description" className="text-lg">
               Description
             </Label>
-            <Input
-              id="description"
-              placeholder="Type Description"
-              className="mt-1 bg-background border-muted text-foreground"
-            />
+            <div className="mt-1">
+              <TiptapEditor
+                content={description}
+                onChange={setDescription}
+                placeholder="Type Description"
+                className="bg-background border-muted text-foreground"
+              />
+            </div>
           </div>
           <div>
             <Label htmlFor="due-date" className="text-lg">

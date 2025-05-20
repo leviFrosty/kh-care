@@ -44,7 +44,7 @@ export default function DashboardLayout({
       </main>
 
       {/* Mobile bottom navigation */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
         <div className="flex items-center justify-around h-16">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="flex-1">
