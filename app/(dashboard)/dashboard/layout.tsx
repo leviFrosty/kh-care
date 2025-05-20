@@ -4,7 +4,23 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Users, Settings, Shield, Activity, Menu } from "lucide-react";
+import {
+  Users,
+  Settings,
+  Shield,
+  Activity,
+  Menu,
+  Plus,
+  Home,
+} from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { AddNewSheet } from "../../../components/add-new-sheet";
 
 export default function DashboardLayout({
   children,
@@ -22,51 +38,51 @@ export default function DashboardLayout({
   ];
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-68px)] max-w-7xl mx-auto w-full">
-      {/* Mobile header */}
-      <div className="lg:hidden flex items-center justify-between bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center">
-          <span className="font-medium">Settings</span>
+    <div className="flex flex-col min-h-screen max-w-7xl mx-auto w-full">
+      <main className="flex-1 overflow-y-auto p-0 lg:p-4 pb-20 lg:pb-4">
+        {children}
+      </main>
+
+      {/* Mobile bottom navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200">
+        <div className="flex items-center justify-around h-16">
+          {navItems.map((item) => (
+            <Link key={item.href} href={item.href} className="flex-1">
+              <Button
+                variant="ghost"
+                className={`w-full h-full flex flex-col items-center justify-center gap-1 ${
+                  pathname === item.href ? "text-primary" : "text-gray-500"
+                }`}
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="text-xs">{item.label}</span>
+              </Button>
+            </Link>
+          ))}
+
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex-1 h-full flex flex-col items-center justify-center gap-1"
+              >
+                <div className="bg-primary text-primary-foreground rounded-full p-2">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <span className="text-xs">New</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="flex flex-col h-[90vh]">
+              <SheetHeader>
+                <SheetTitle className="text-xl font-bold text-center">
+                  Add New
+                </SheetTitle>
+              </SheetHeader>
+
+              <AddNewSheet />
+            </SheetContent>
+          </Sheet>
         </div>
-        <Button
-          className="-mr-3"
-          variant="ghost"
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        >
-          <Menu className="h-6 w-6" />
-          <span className="sr-only">Toggle sidebar</span>
-        </Button>
-      </div>
-
-      <div className="flex flex-1 overflow-hidden h-full">
-        {/* Sidebar */}
-        <aside
-          className={`w-64 bg-white lg:bg-gray-50 border-r border-gray-200 lg:block ${
-            isSidebarOpen ? "block" : "hidden"
-          } lg:relative absolute inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
-        >
-          <nav className="h-full overflow-y-auto p-4">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} passHref>
-                <Button
-                  variant={pathname === item.href ? "secondary" : "ghost"}
-                  className={`shadow-none my-1 w-full justify-start ${
-                    pathname === item.href ? "bg-gray-100" : ""
-                  }`}
-                  onClick={() => setIsSidebarOpen(false)}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Button>
-              </Link>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-0 lg:p-4">{children}</main>
       </div>
     </div>
   );
