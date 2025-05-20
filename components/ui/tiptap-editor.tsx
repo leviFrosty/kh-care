@@ -12,7 +12,6 @@ import {
   Code,
   Undo,
   Redo,
-  ChevronDown,
 } from "lucide-react";
 import { Button } from "./button";
 import {
@@ -28,26 +27,17 @@ interface TiptapEditorProps {
   content?: string;
   onChange?: (content: string) => void;
   className?: string;
-  placeholder?: string;
 }
 
 export function TiptapEditor({
   content = "",
   onChange,
   className,
-  placeholder = "Write something...",
 }: TiptapEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: false,
-        bulletList: {},
-        orderedList: {},
-        blockquote: {
-          HTMLAttributes: {
-            class: "border-l-4 border-gray-300 pl-4 dark:border-gray-600",
-          },
-        },
       }),
       Heading.configure({
         levels: [1, 2, 3, 4],
@@ -57,13 +47,12 @@ export function TiptapEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-sm sm:prose-base dark:prose-invert focus:outline-none max-w-full min-h-[100px] p-3",
-          "[&_h1]:text-4xl [&_h1]:font-bold [&_h1]:mb-4",
-          "[&_h2]:text-3xl [&_h2]:font-bold [&_h2]:mb-3",
-          "[&_h3]:text-2xl [&_h3]:font-bold [&_h3]:mb-2",
-          "[&_h4]:text-xl [&_h4]:font-bold [&_h4]:mb-2",
-          "[&_ul]:list-disc [&_ul]:ml-4",
-          "[&_ol]:list-decimal [&_ol]:ml-4",
+          "prose prose-sm sm:prose-base dark:prose-invert max-w-full min-h-[100px] p-3",
+          "prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-h4:text-lg",
+          "transition-[color,box-shadow]",
+          "prose-h1:mb-4 prose-h2:mb-3 prose-h3:mb-2",
+          "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none",
+          "rounded-b-md",
           className,
         ),
       },

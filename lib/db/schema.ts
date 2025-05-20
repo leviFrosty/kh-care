@@ -46,6 +46,7 @@ export const tasks = pgTable(
        */
       (): AnyPgColumn => tasks.id,
     ),
+    assigneeId: integer("assignee_id").references(() => users.id),
     title: varchar("title", { length: 100 }).notNull(),
     description: text("description"),
     status: taskStatus().notNull().default("todo"),

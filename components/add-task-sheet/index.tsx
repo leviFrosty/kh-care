@@ -9,6 +9,7 @@ import {
   Plus,
   ChevronDown,
   Loader2,
+  User,
 } from "lucide-react";
 import { DatePicker } from "@/components/ui/datepicker";
 import { TiptapEditor } from "@/components/ui/tiptap-editor";
@@ -24,7 +25,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
+import { TeamDataWithMembers } from "@/lib/db/schema";
 
 const taskFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -32,16 +41,17 @@ const taskFormSchema = z.object({
   type: z.enum(["task", "project", "idea"] as const),
   dueDate: z.date().optional(),
   teamId: z.number(),
+  assigneeId: z.number().optional(),
 });
 
 type TaskFormValues = z.infer<typeof taskFormSchema>;
 
 interface AddTaskSheetProps {
-  teamId: number;
+  team: TeamDataWithMembers;
   onClose?: () => void;
 }
 
-export function AddTaskSheet({ teamId, onClose }: AddTaskSheetProps) {
+export function AddTaskSheet({ team, onClose }: AddTaskSheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -51,7 +61,8 @@ export function AddTaskSheet({ teamId, onClose }: AddTaskSheetProps) {
       title: "",
       description: "",
       type: "task",
-      teamId,
+      teamId: team.id,
+      assigneeId: undefined,
     },
   });
 
@@ -98,31 +109,31 @@ export function AddTaskSheet({ teamId, onClose }: AddTaskSheetProps) {
                 <div className="flex gap-4 justify-center mb-6">
                   <button
                     type="button"
-                    className={`flex flex-col items-center border rounded-xl px-6 py-5 gap-2 w-28 ${field.value === "task" ? "border-primary" : "border-muted"}`}
+                    className={`flex flex-col items-center border rounded-xl px-6 py-5 gap-2 w-28 transition-all duration-200 ${field.value === "task" ? "border-primary" : "border-muted"}`}
                     onClick={() => field.onChange("task")}
                   >
                     <CheckCircle
-                      className={`h-7 w-7 ${field.value === "task" ? "text-yellow-500" : "text-muted-foreground"}`}
+                      className={`h-7 w-7 transition-colors duration-200 ${field.value === "task" ? "text-yellow-500" : "text-muted-foreground"}`}
                     />
                     <span className="font-medium">Task</span>
                   </button>
                   <button
                     type="button"
-                    className={`flex flex-col items-center border rounded-xl px-6 py-5 gap-2 w-28 ${field.value === "project" ? "border-primary" : "border-muted"}`}
+                    className={`flex flex-col items-center border rounded-xl px-6 py-5 gap-2 w-28 transition-all duration-200 ${field.value === "project" ? "border-primary" : "border-muted"}`}
                     onClick={() => field.onChange("project")}
                   >
                     <ClipboardList
-                      className={`h-7 w-7 ${field.value === "project" ? "text-yellow-500" : "text-muted-foreground"}`}
+                      className={`h-7 w-7 transition-colors duration-200 ${field.value === "project" ? "text-yellow-500" : "text-muted-foreground"}`}
                     />
                     <span className="font-medium">Project</span>
                   </button>
                   <button
                     type="button"
-                    className={`flex flex-col items-center border rounded-xl px-6 py-5 gap-2 w-28 ${field.value === "idea" ? "border-primary" : "border-muted"}`}
+                    className={`flex flex-col items-center border rounded-xl px-6 py-5 gap-2 w-28 transition-all duration-200 ${field.value === "idea" ? "border-primary" : "border-muted"}`}
                     onClick={() => field.onChange("idea")}
                   >
                     <Lightbulb
-                      className={`h-7 w-7 ${field.value === "idea" ? "text-yellow-500" : "text-muted-foreground"}`}
+                      className={`h-7 w-7 transition-colors duration-200 ${field.value === "idea" ? "text-yellow-500" : "text-muted-foreground"}`}
                     />
                     <span className="font-medium">Idea</span>
                   </button>
@@ -161,7 +172,6 @@ export function AddTaskSheet({ teamId, onClose }: AddTaskSheetProps) {
                     <TiptapEditor
                       content={field.value}
                       onChange={field.onChange}
-                      placeholder="Type Description"
                       className="bg-background border-muted text-foreground"
                     />
                   </FormControl>
@@ -189,37 +199,43 @@ export function AddTaskSheet({ teamId, onClose }: AddTaskSheetProps) {
               <div className="text-yellow-500 font-semibold mb-1">
                 Admin Settings
               </div>
-              <Label htmlFor="system" className="text-base">
-                Connect To System
-              </Label>
-              <div className="relative mt-1">
-                <Input
-                  id="system"
-                  placeholder="Choose System"
-                  className="pr-10 bg-background border-muted text-foreground"
-                />
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              </div>
-              <div className="mt-3">
-                <Label htmlFor="assignee" className="text-base">
-                  Assignee
-                </Label>
-                <div className="flex items-center gap-2 mt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="border-muted text-foreground bg-background"
-                  >
-                    <Plus className="h-5 w-5" />
-                  </Button>
-                  <Input
-                    id="assignee"
-                    placeholder="Add"
-                    className="flex-1 bg-background border-muted text-foreground"
-                  />
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="assigneeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Assignee</FormLabel>
+                    <Select
+                      value={field.value?.toString()}
+                      onValueChange={(value) =>
+                        field.onChange(value ? parseInt(value) : undefined)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full bg-background border-muted text-foreground">
+                          <SelectValue placeholder="Assign to..." />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {team.teamMembers.map((member) => (
+                          <SelectItem
+                            key={member.user.id}
+                            value={member.user.id.toString()}
+                          >
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4" />
+                              <span>
+                                {member.user.name || member.user.email}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
           </div>
         </div>

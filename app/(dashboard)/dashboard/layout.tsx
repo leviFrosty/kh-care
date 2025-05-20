@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -9,9 +8,8 @@ import {
   Settings,
   Shield,
   Activity,
-  Menu,
   Plus,
-  Home,
+  CircleCheckBig,
 } from "lucide-react";
 import {
   Sheet,
@@ -33,11 +31,10 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { data: team } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
 
   const navItems = [
-    { href: "/dashboard", icon: Users, label: "Team" },
+    { href: "/dashboard", icon: CircleCheckBig, label: "Tasks" },
     { href: "/dashboard/general", icon: Settings, label: "General" },
     { href: "/dashboard/activity", icon: Activity, label: "Activity" },
     { href: "/dashboard/security", icon: Shield, label: "Security" },
@@ -89,7 +86,7 @@ export default function DashboardLayout({
                 </SheetTitle>
               </SheetHeader>
 
-              <AddTaskSheet teamId={team.id} />
+              <AddTaskSheet team={team} />
             </SheetContent>
           </Sheet>
         </div>

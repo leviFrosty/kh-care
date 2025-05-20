@@ -107,7 +107,7 @@ export async function getActivityLogs() {
     .leftJoin(users, eq(activityLogs.userId, users.id))
     .where(eq(activityLogs.userId, user.id))
     .orderBy(desc(activityLogs.timestamp))
-    .limit(10);
+    .limit(15);
 }
 
 export async function getTeamForUser(): Promise<TeamDataWithMembers | null> {
