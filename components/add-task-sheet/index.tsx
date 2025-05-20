@@ -33,40 +33,42 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { TeamDataWithMembers } from "@/lib/db/schema";
+import { NewTask, TeamDataWithMembers, taskType } from "@/lib/db/schema";
 
-const taskFormSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  description: z.string().optional(),
-  type: z.enum(["task", "project", "idea"] as const),
-  dueDate: z.date().optional(),
-  teamId: z.number(),
-  assigneeId: z.number().optional(),
-});
-
-type TaskFormValues = z.infer<typeof taskFormSchema>;
+// Create a type that omits auto-generated fields from NewTask
+type TaskFormData = Omit<
+  NewTask,
+  "id" | "createdAt" | "updatedAt" | "deletedAt" | "parentTaskId"
+>;
 
 interface AddTaskSheetProps {
   team: TeamDataWithMembers;
+  defaultColumnId: number;
   onClose?: () => void;
 }
 
-export function AddTaskSheet({ team, onClose }: AddTaskSheetProps) {
+export function AddTaskSheet({
+  team,
+  defaultColumnId,
+  onClose,
+}: AddTaskSheetProps) {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  const form = useForm<TaskFormValues>({
-    resolver: zodResolver(taskFormSchema),
+  const form = useForm<TaskFormData>({
     defaultValues: {
       title: "",
-      description: "",
+      description: null,
       type: "task",
       teamId: team.id,
-      assigneeId: undefined,
+      columnId: defaultColumnId,
+      order: 0, // New tasks are added at the start
+      assigneeId: null,
+      dueDate: null,
     },
   });
 
-  async function onSubmit(data: TaskFormValues) {
+  async function onSubmit(data: TaskFormData) {
     try {
       setIsLoading(true);
       const response = await fetch("/api/task", {
@@ -82,7 +84,6 @@ export function AddTaskSheet({ team, onClose }: AddTaskSheetProps) {
       }
 
       toast.success("Task created successfully");
-
       router.refresh();
       onClose?.();
     } catch (error) {
@@ -170,7 +171,7 @@ export function AddTaskSheet({ team, onClose }: AddTaskSheetProps) {
                   <FormLabel className="text-lg">Description</FormLabel>
                   <FormControl>
                     <TiptapEditor
-                      content={field.value}
+                      content={field.value || ""}
                       onChange={field.onChange}
                       className="bg-background border-muted text-foreground"
                     />
@@ -187,7 +188,10 @@ export function AddTaskSheet({ team, onClose }: AddTaskSheetProps) {
                 <FormItem>
                   <FormLabel className="text-lg">Due Date</FormLabel>
                   <FormControl>
-                    <DatePicker value={field.value} onChange={field.onChange} />
+                    <DatePicker
+                      value={field.value || undefined}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -208,7 +212,7 @@ export function AddTaskSheet({ team, onClose }: AddTaskSheetProps) {
                     <Select
                       value={field.value?.toString()}
                       onValueChange={(value) =>
-                        field.onChange(value ? parseInt(value) : undefined)
+                        field.onChange(value ? parseInt(value) : null)
                       }
                     >
                       <FormControl>

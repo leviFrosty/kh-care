@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   getUser,
   createTask,
@@ -16,12 +16,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    console.log("req", req);
     const json = await req.json();
-    const { title, description, type, dueDate, teamId } = json;
+    const { title, description, type, dueDate, teamId, columnId } = json;
+    console.log("json", json);
 
-    if (!title || !teamId) {
+    if (!title || !teamId || !columnId) {
       return NextResponse.json(
-        { error: "Title and team ID are required" },
+        { error: "Title, team ID, and column ID are required" },
         { status: 400 },
       );
     }
@@ -31,6 +33,8 @@ export async function POST(req: Request) {
       teamId,
       Perm.CREATE_TASK,
     );
+
+    console.log("canCreate", canCreate);
     if (!canCreate) {
       return NextResponse.json(
         { error: "You don't have permission to create tasks" },
@@ -44,6 +48,8 @@ export async function POST(req: Request) {
       type,
       dueDate,
       teamId,
+      columnId,
+      order: 0, // New tasks are added at the start of the column
     });
     return NextResponse.json(task);
   } catch (error) {
@@ -60,7 +66,7 @@ export async function GET(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const teamId = searchParams.get("teamId");
+    const teamId = await searchParams.get("teamId");
 
     if (!teamId) {
       return NextResponse.json(
@@ -92,7 +98,7 @@ export async function GET(req: Request) {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PATCH(req: NextRequest) {
   try {
     const user = await getUser();
     if (!user) {
@@ -137,8 +143,8 @@ export async function DELETE(req: Request) {
     }
 
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-    const teamId = searchParams.get("teamId");
+    const id = await searchParams.get("id");
+    const teamId = await searchParams.get("teamId");
 
     if (!id || !teamId) {
       return NextResponse.json(

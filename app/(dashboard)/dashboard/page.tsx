@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { customerPortalAction } from "@/lib/payments/actions";
 import { useActionState, useEffect, useState } from "react";
-import { TeamDataWithMembers, User } from "@/lib/db/schema";
+import { TeamDataWithMembers, User, KanbanColumn } from "@/lib/db/schema";
 import { removeTeamMember, inviteTeamMember } from "@/app/(login)/actions";
 import useSWR from "swr";
 import { Suspense } from "react";
@@ -19,6 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Loader2, PlusCircle } from "lucide-react";
 import { Role, RoleStrings } from "@/lib/db/permissions";
+import { KanbanBoard } from "./components/kanban-board";
 
 type ActionState = {
   error?: string;
@@ -186,7 +187,6 @@ function InviteTeamMemberSkeleton() {
     </Card>
   );
 }
-
 function InviteTeamMember() {
   const { data: user } = useSWR<User>("/api/user", fetcher);
   const { data: teamData } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
@@ -280,18 +280,39 @@ function InviteTeamMember() {
   );
 }
 
-export default function SettingsPage() {
+function KanbanBoardSkeleton() {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
+      {[1, 2, 3, 4].map((i) => (
+        <Card key={i} className="h-[500px]">
+          <CardHeader>
+            <div className="h-6 bg-gray-200 rounded w-24 animate-pulse" />
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[1, 2, 3].map((j) => (
+                <div
+                  key={j}
+                  className="h-24 bg-gray-100 rounded-lg animate-pulse"
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export default function DashboardPage() {
+  const { data: columns } = useSWR<KanbanColumn[]>("/api/kanban", fetcher);
+  console.log("columns", columns);
+
   return (
     <section className="flex-1 p-4 lg:p-8">
-      <h1 className="text-lg lg:text-2xl font-medium mb-6">Team Settings</h1>
-      <Suspense fallback={<SubscriptionSkeleton />}>
-        <ManageSubscription />
-      </Suspense>
-      <Suspense fallback={<TeamMembersSkeleton />}>
-        <TeamMembers />
-      </Suspense>
-      <Suspense fallback={<InviteTeamMemberSkeleton />}>
-        <InviteTeamMember />
+      <h1 className="text-lg lg:text-2xl font-medium mb-6">Tasks</h1>
+      <Suspense fallback={<KanbanBoardSkeleton />}>
+        <KanbanBoard columns={columns || []} />
       </Suspense>
     </section>
   );

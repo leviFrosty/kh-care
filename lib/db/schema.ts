@@ -30,6 +30,21 @@ export const taskStatus = pgEnum("status", [
 ]);
 export const taskType = pgEnum("type", ["task", "project", "idea"]);
 
+export const kanbanColumns = pgTable(
+  "kanban_columns",
+  {
+    id: serial("id").primaryKey(),
+    teamId: integer("team_id")
+      .notNull()
+      .references(() => teams.id),
+    name: varchar("name", { length: 50 }).notNull(),
+    order: integer("order").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (table) => [index("idx_kanban_columns_team_id").on(table.teamId)],
+);
+
 export const tasks = pgTable(
   "tasks",
   {
@@ -37,6 +52,10 @@ export const tasks = pgTable(
     teamId: integer("team_id")
       .notNull()
       .references(() => teams.id),
+    columnId: integer("column_id")
+      .notNull()
+      .references(() => kanbanColumns.id),
+    order: integer("order").notNull(),
     parentTaskId: integer("parent_task_id").references(
       /**
        * If you want to do a self reference, due to a TypeScript limitations you
@@ -49,7 +68,6 @@ export const tasks = pgTable(
     assigneeId: integer("assignee_id").references(() => users.id),
     title: varchar("title", { length: 100 }).notNull(),
     description: text("description"),
-    status: taskStatus().notNull().default("todo"),
     type: taskType().notNull().default("task"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -58,6 +76,7 @@ export const tasks = pgTable(
   },
   (table) => [
     index("idx_tasks_team_id").on(table.teamId),
+    index("idx_tasks_column_id").on(table.columnId),
     index("idx_tasks_parent_task_id").on(table.parentTaskId),
   ],
 );
@@ -280,14 +299,33 @@ export const rolePermissionsRelations = relations(
   }),
 );
 
+export const kanbanColumnsRelations = relations(
+  kanbanColumns,
+  ({ many, one }) => ({
+    team: one(teams, {
+      fields: [kanbanColumns.teamId],
+      references: [teams.id],
+    }),
+    tasks: many(tasks),
+  }),
+);
+
 export const taskRelations = relations(tasks, ({ one, many }) => ({
   team: one(teams, {
     fields: [tasks.teamId],
     references: [teams.id],
   }),
+  column: one(kanbanColumns, {
+    fields: [tasks.columnId],
+    references: [kanbanColumns.id],
+  }),
   parent: one(tasks, {
     fields: [tasks.parentTaskId],
     references: [tasks.id],
+  }),
+  assignee: one(users, {
+    fields: [tasks.assigneeId],
+    references: [users.id],
   }),
   comments: many(comments),
 }));
@@ -354,6 +392,10 @@ export type RolePermission = typeof rolePermissions.$inferSelect;
 export type NewRolePermission = typeof rolePermissions.$inferInsert;
 export type TaskType = (typeof taskType.enumValues)[number];
 export type TaskStatus = (typeof taskStatus.enumValues)[number];
+export type KanbanColumn = typeof kanbanColumns.$inferSelect & {
+  tasks: Task[];
+};
+export type NewKanbanColumn = typeof kanbanColumns.$inferInsert;
 
 export enum ActivityType {
   SIGN_UP = "SIGN_UP",

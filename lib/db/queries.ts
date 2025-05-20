@@ -1,5 +1,5 @@
 "server-only";
-import { desc, and, eq, isNull } from "drizzle-orm";
+import { desc, and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "./drizzle";
 import {
   activityLogs,
@@ -9,6 +9,9 @@ import {
   users,
   tasks,
   NewTask,
+  kanbanColumns,
+  NewKanbanColumn,
+  KanbanColumn,
 } from "./schema";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth/session";
@@ -149,14 +152,13 @@ export async function getTeamForUser(): Promise<TeamDataWithMembers | null> {
 export async function createTask(
   data: Omit<
     NewTask,
-    "id" | "createdAt" | "updatedAt" | "deletedAt" | "status" | "parentTaskId"
+    "id" | "createdAt" | "updatedAt" | "deletedAt" | "parentTaskId"
   >,
 ) {
   const task = await db
     .insert(tasks)
     .values({
       ...data,
-      status: "todo",
     })
     .returning();
 
@@ -199,4 +201,104 @@ export async function deleteTask(id: number, hardDelete = false) {
       .where(eq(tasks.id, id));
   }
   return true;
+}
+
+export async function getTeamKanbanData(teamId: number) {
+  const columns = await db.query.kanbanColumns.findMany({
+    where: eq(kanbanColumns.teamId, teamId),
+    orderBy: kanbanColumns.order,
+    with: {
+      tasks: {
+        where: isNull(tasks.deletedAt),
+        orderBy: tasks.order,
+        with: {
+          assignee: true,
+        },
+      },
+    },
+  });
+
+  return columns;
+}
+
+export async function createKanbanColumn(data: NewKanbanColumn) {
+  const maxOrder = await db
+    .select({ order: sql<number>`max(${kanbanColumns.order})` })
+    .from(kanbanColumns)
+    .where(eq(kanbanColumns.teamId, data.teamId));
+
+  const column = await db
+    .insert(kanbanColumns)
+    .values({
+      ...data,
+      order: (maxOrder[0]?.order || 0) + 1,
+    })
+    .returning();
+
+  return column[0];
+}
+
+export async function updateKanbanColumn(
+  id: number,
+  data: Partial<Pick<KanbanColumn, "name" | "order">>,
+) {
+  const column = await db
+    .update(kanbanColumns)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(kanbanColumns.id, id))
+    .returning();
+
+  return column[0];
+}
+
+export async function deleteKanbanColumn(id: number) {
+  // Move tasks to the first column before deleting
+  const firstColumn = await db.query.kanbanColumns.findFirst({
+    where: eq(kanbanColumns.order, 1),
+  });
+
+  if (firstColumn) {
+    await db
+      .update(tasks)
+      .set({ columnId: firstColumn.id })
+      .where(eq(tasks.columnId, id));
+  }
+
+  await db.delete(kanbanColumns).where(eq(kanbanColumns.id, id));
+  return true;
+}
+
+export async function updateTaskColumn(
+  taskId: number,
+  columnId: number,
+  order: number,
+) {
+  const task = await db
+    .update(tasks)
+    .set({
+      columnId,
+      order,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, taskId))
+    .returning();
+
+  return task[0];
+}
+
+export async function reorderColumns(updates: { id: number; order: number }[]) {
+  const results = await Promise.all(
+    updates.map((update) =>
+      db
+        .update(kanbanColumns)
+        .set({ order: update.order, updatedAt: new Date() })
+        .where(eq(kanbanColumns.id, update.id))
+        .returning(),
+    ),
+  );
+
+  return results.map((r) => r[0]);
 }

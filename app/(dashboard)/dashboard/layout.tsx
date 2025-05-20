@@ -21,7 +21,7 @@ import {
 
 import { AddTaskSheet } from "../../../components/add-task-sheet";
 import useSWR from "swr";
-import { TeamDataWithMembers } from "@/lib/db/schema";
+import { KanbanColumn, TeamDataWithMembers } from "@/lib/db/schema";
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -32,6 +32,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const { data: team } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
+  const { data: columns } = useSWR<KanbanColumn[]>("/api/column", fetcher);
 
   const navItems = [
     { href: "/dashboard", icon: CircleCheckBig, label: "Tasks" },
@@ -86,7 +87,10 @@ export default function DashboardLayout({
                 </SheetTitle>
               </SheetHeader>
 
-              <AddTaskSheet team={team} />
+              <AddTaskSheet
+                team={team}
+                defaultColumnId={columns?.[0]?.id || 0}
+              />
             </SheetContent>
           </Sheet>
         </div>
