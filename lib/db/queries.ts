@@ -7,6 +7,8 @@ import {
   teamMembers,
   teams,
   users,
+  tasks,
+  NewTask,
 } from "./schema";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth/session";
@@ -142,4 +144,59 @@ export async function getTeamForUser(): Promise<TeamDataWithMembers | null> {
   });
 
   return result?.team || null;
+}
+
+export async function createTask(
+  data: Omit<
+    NewTask,
+    "id" | "createdAt" | "updatedAt" | "deletedAt" | "status" | "parentTaskId"
+  >,
+) {
+  const task = await db
+    .insert(tasks)
+    .values({
+      ...data,
+      status: "todo",
+    })
+    .returning();
+
+  return task[0];
+}
+
+export async function getTeamTasks(teamId: number) {
+  return await db
+    .select()
+    .from(tasks)
+    .where(and(eq(tasks.teamId, teamId), isNull(tasks.deletedAt)));
+}
+
+export async function updateTask(
+  id: number,
+  data: Partial<Omit<NewTask, "id" | "createdAt" | "updatedAt" | "deletedAt">>,
+) {
+  const task = await db
+    .update(tasks)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(tasks.id, id))
+    .returning();
+
+  return task[0];
+}
+
+export async function deleteTask(id: number, hardDelete = false) {
+  if (hardDelete) {
+    await db.delete(tasks).where(eq(tasks.id, id));
+  } else {
+    await db
+      .update(tasks)
+      .set({
+        deletedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(tasks.id, id));
+  }
+  return true;
 }

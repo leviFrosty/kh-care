@@ -136,7 +136,6 @@ volumes:
 }
 
 async function readEnvFile(): Promise<Record<string, string>> {
-  // TODO: make this not error if file doesn't exist
   try {
     const envPath = path.join(process.cwd(), ".env");
     const envContent = await fs.readFile(envPath, "utf-8");
@@ -151,6 +150,10 @@ async function readEnvFile(): Promise<Record<string, string>> {
       {} as Record<string, string>,
     );
   } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
+      // File doesn't exist, return empty object
+      return {};
+    }
     console.error("Error reading .env file:", error);
     throw error;
   }
@@ -199,8 +202,18 @@ function generateAuthSecret(): string {
   return crypto.randomBytes(32).toString("hex");
 }
 
+async function getResendApiKey(): Promise<string> {
+  console.log("Step 6: Getting Resend API Key");
+  const envVars = await readEnvFile();
+  if (envVars["RESEND_API_KEY"]) {
+    console.log("Resend API Key already exists in .env. Skipping prompt.");
+    return envVars["RESEND_API_KEY"];
+  }
+  return await question("Enter your Resend API Key: ");
+}
+
 async function writeEnvFile(envVars: Record<string, string>) {
-  console.log("Step 6: Writing environment variables to .env");
+  console.log("Step 7: Writing environment variables to .env");
   const envContent = Object.entries(envVars)
     .map(([key, value]) => `${key}=${value}`)
     .join("\n");
@@ -217,13 +230,14 @@ async function main() {
   const STRIPE_WEBHOOK_SECRET = await createStripeWebhook();
   const BASE_URL = "http://localhost:3000";
   const AUTH_SECRET = generateAuthSecret();
-
+  const RESEND_API_KEY = await getResendApiKey();
   await writeEnvFile({
     POSTGRES_URL,
     STRIPE_SECRET_KEY,
     STRIPE_WEBHOOK_SECRET,
     BASE_URL,
     AUTH_SECRET,
+    RESEND_API_KEY,
   });
 
   console.log("🎉 Setup completed successfully!");

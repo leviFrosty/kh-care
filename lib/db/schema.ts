@@ -28,6 +28,7 @@ export const taskStatus = pgEnum("status", [
   "in_progress",
   "done",
 ]);
+export const taskType = pgEnum("type", ["task", "project", "idea"]);
 
 export const tasks = pgTable(
   "tasks",
@@ -48,6 +49,7 @@ export const tasks = pgTable(
     title: varchar("title", { length: 100 }).notNull(),
     description: text("description"),
     status: taskStatus().notNull().default("todo"),
+    type: taskType().notNull().default("task"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
     deletedAt: timestamp("deleted_at"),
@@ -349,6 +351,8 @@ export type File = typeof files.$inferSelect;
 export type NewFile = typeof files.$inferInsert;
 export type RolePermission = typeof rolePermissions.$inferSelect;
 export type NewRolePermission = typeof rolePermissions.$inferInsert;
+export type TaskType = (typeof taskType.enumValues)[number];
+export type TaskStatus = (typeof taskStatus.enumValues)[number];
 
 export enum ActivityType {
   SIGN_UP = "SIGN_UP",

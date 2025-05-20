@@ -20,7 +20,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { AddNewSheet } from "../../../components/add-new-sheet";
+
+import { AddTaskSheet } from "../../../components/add-task-sheet";
+import useSWR from "swr";
+import { TeamDataWithMembers } from "@/lib/db/schema";
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function DashboardLayout({
   children,
@@ -29,6 +34,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { data: team } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
 
   const navItems = [
     { href: "/dashboard", icon: Users, label: "Team" },
@@ -36,6 +42,10 @@ export default function DashboardLayout({
     { href: "/dashboard/activity", icon: Activity, label: "Activity" },
     { href: "/dashboard/security", icon: Shield, label: "Security" },
   ];
+
+  if (!team) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="flex flex-col min-h-screen max-w-7xl mx-auto w-full">
@@ -79,7 +89,7 @@ export default function DashboardLayout({
                 </SheetTitle>
               </SheetHeader>
 
-              <AddNewSheet />
+              <AddTaskSheet teamId={team.id} />
             </SheetContent>
           </Sheet>
         </div>
