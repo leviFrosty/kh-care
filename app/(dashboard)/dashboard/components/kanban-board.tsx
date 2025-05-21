@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -31,7 +31,14 @@ interface KanbanBoardProps {
 }
 
 export function KanbanBoard({ columns: initialColumns }: KanbanBoardProps) {
-  const [columns, setColumns] = useState(initialColumns);
+  const [columns, setColumns] = useState<KanbanColumn[]>([]);
+
+  useEffect(() => {
+    if (initialColumns) {
+      setColumns(initialColumns);
+    }
+  }, [initialColumns]);
+
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [editingColumn, setEditingColumn] = useState<string | null>(null);
 

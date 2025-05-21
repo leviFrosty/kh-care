@@ -32,7 +32,6 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const { data: team } = useSWR<TeamDataWithMembers>("/api/team", fetcher);
-  const { data: columns } = useSWR<KanbanColumn[]>("/api/column", fetcher);
 
   const navItems = [
     { href: "/dashboard", icon: CircleCheckBig, label: "Tasks" },
@@ -87,10 +86,7 @@ export default function DashboardLayout({
                 </SheetTitle>
               </SheetHeader>
 
-              <AddTaskSheet
-                team={team}
-                defaultColumnId={columns?.[0]?.id || 0}
-              />
+              <AddTaskSheet team={team} />
             </SheetContent>
           </Sheet>
         </div>
